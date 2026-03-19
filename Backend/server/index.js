@@ -18,6 +18,7 @@ app.use('/api/apartments', require('./routes/apartments'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/hero', require('./routes/hero'));
 app.use('/api/areas', require('./routes/areas'));
+app.use('/api/projects', require('./routes/projects'));
 app.use('/sitemap.xml', require('./routes/sitemap'));
 
 const PORT = process.env.PORT || 5000;

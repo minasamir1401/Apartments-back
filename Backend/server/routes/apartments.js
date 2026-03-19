@@ -14,7 +14,7 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ 
+const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
@@ -68,12 +68,12 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const _id = Date.now().toString();
-    const { 
-      title, title_en, price, priceType, location, location_en, 
+    const {
+      title, title_en, price, priceType, location, location_en,
       beds, baths, size, description, description_en, images, amenities, rules,
-      type, category 
+      type, category
     } = req.body;
-    
+
     const query = `
       INSERT INTO apartments (
         _id, title, title_en, price, pricetype, location, location_en, 
@@ -84,15 +84,15 @@ router.post('/', async (req, res) => {
       RETURNING *
     `;
     const values = [
-      _id, title, title_en, price, priceType, location, location_en, 
+      _id, title, title_en, price, priceType, location, location_en,
       beds, baths, size, description, description_en,
-      JSON.stringify(images || []), 
-      JSON.stringify(amenities || []), 
+      JSON.stringify(images || []),
+      JSON.stringify(amenities || []),
       JSON.stringify(rules || []),
       type || 'apartment',
       category || 'buy'
     ];
-    
+
     const result = await db.query(query, values);
     const finalRes = await db.query('SELECT *, pricetype AS "priceType" FROM apartments WHERE _id = $1', [_id]);
     res.status(201).json(finalRes.rows[0]);
@@ -105,12 +105,12 @@ router.post('/', async (req, res) => {
 // PATCH update
 router.patch('/:id', async (req, res) => {
   try {
-    const { 
-      title, title_en, price, priceType, location, location_en, 
+    const {
+      title, title_en, price, priceType, location, location_en,
       beds, baths, size, description, description_en, images, amenities, rules,
       type, category
     } = req.body;
-    
+
     const query = `
       UPDATE apartments 
       SET title = $1, title_en = $2, price = $3, pricetype = $4, location = $5, location_en = $6, 
@@ -121,7 +121,7 @@ router.patch('/:id', async (req, res) => {
       RETURNING *
     `;
     const values = [
-      title, title_en, price, priceType, location, location_en, 
+      title, title_en, price, priceType, location, location_en,
       beds, baths, size, description, description_en,
       JSON.stringify(images),
       JSON.stringify(amenities),
@@ -129,7 +129,7 @@ router.patch('/:id', async (req, res) => {
       type, category,
       req.params.id
     ];
-    
+
     const result = await db.query(query, values);
     if (result.rows[0]) {
       const finalRes = await db.query('SELECT *, pricetype AS "priceType" FROM apartments WHERE _id = $1', [req.params.id]);

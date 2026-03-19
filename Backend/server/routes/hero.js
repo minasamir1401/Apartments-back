@@ -14,7 +14,7 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ 
+const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
@@ -53,7 +53,7 @@ router.post('/', upload.single('imageFile'), async (req, res) => {
 router.put('/:id', upload.single('imageFile'), async (req, res) => {
   const { id } = req.params;
   const { title, subtitle, highlight, button_text, button_link, display_order, image } = req.body;
-  
+
   let finalImage = image;
   if (req.file) {
     finalImage = `/uploads/${req.file.filename}`;

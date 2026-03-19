@@ -5,16 +5,29 @@ const db = require('../db');
 // POST create
 router.post('/', async (req, res) => {
   try {
-    const { name, phone, checkIn, checkOut, notes, apartmentTitle, price, apartmentId } = req.body;
+    const { name, phone, checkIn, checkOut, notes, apartmentTitle, price, apartmentId, projectId, projectTitle } = req.body;
     const _id = Date.now().toString();
-    
+
     const query = `
-      INSERT INTO bookings (_id, name, phone, checkIn, checkOut, notes, apartmentTitle, price, apartmentId, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      INSERT INTO bookings (_id, name, phone, checkIn, checkOut, notes, apartmentTitle, price, apartmentId, project_id, project_title, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *
     `;
-    const values = [_id, name, phone, checkIn, checkOut, notes, apartmentTitle, price, apartmentId, 'pending'];
-    
+    const values = [
+      _id, 
+      name, 
+      phone, 
+      checkIn || null, 
+      checkOut || null, 
+      notes || '', 
+      apartmentTitle || null, 
+      price || null, 
+      apartmentId || null, 
+      projectId || null, 
+      projectTitle || null, 
+      'pending'
+    ];
+
     const result = await db.query(query, values);
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (err) {

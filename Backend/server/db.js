@@ -57,12 +57,30 @@ const initDb = async () => {
         checkOut TIMESTAMPTZ,
         notes TEXT,
         apartmentTitle TEXT,
-        price NUMERIC,
+        price TEXT,
         apartmentId TEXT,
+        project_id TEXT,
+        project_title TEXT,
         createdAt TIMESTAMPTZ DEFAULT NOW(),
         status TEXT DEFAULT 'pending'
       )
     `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS projects (
+        id SERIAL PRIMARY KEY,
+        _id TEXT UNIQUE NOT NULL,
+        title TEXT NOT NULL,
+        title_en TEXT,
+        description TEXT,
+        description_en TEXT,
+        images JSONB DEFAULT '[]',
+        main_image TEXT,
+        status TEXT DEFAULT 'active',
+        createdAt TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS hero_settings (
@@ -86,7 +104,16 @@ const initDb = async () => {
       "ALTER TABLE apartments ADD COLUMN IF NOT EXISTS description_en TEXT",
       "ALTER TABLE apartments ADD COLUMN IF NOT EXISTS baths TEXT",
       "ALTER TABLE hero_settings ADD COLUMN IF NOT EXISTS button_link TEXT DEFAULT '/apartments'",
-      "ALTER TABLE hero_settings ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0"
+      "ALTER TABLE hero_settings ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0",
+      "ALTER TABLE projects ADD COLUMN IF NOT EXISTS main_image TEXT",
+      "ALTER TABLE projects ADD COLUMN IF NOT EXISTS details TEXT",
+      "ALTER TABLE projects ADD COLUMN IF NOT EXISTS details_en TEXT",
+      "ALTER TABLE projects ADD COLUMN IF NOT EXISTS unit_types JSONB DEFAULT '[]'",
+      "ALTER TABLE projects ADD COLUMN IF NOT EXISTS location TEXT",
+      "ALTER TABLE projects ADD COLUMN IF NOT EXISTS location_en TEXT",
+      "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS project_id TEXT",
+      "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS project_title TEXT",
+      "ALTER TABLE bookings ALTER COLUMN price TYPE TEXT USING (price::text)"
     ];
 
     for (const sql of migrations) {
