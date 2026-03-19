@@ -117,7 +117,7 @@ router.patch('/:id', async (req, res) => {
           beds = $7, baths = $8, size = $9, description = $10, description_en = $11,
           images = $12, amenities = $13, rules = $14,
           type = $15, category = $16
-      WHERE _id = $16
+      WHERE _id = $17
       RETURNING *
     `;
     const values = [
