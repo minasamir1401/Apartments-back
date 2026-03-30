@@ -2,11 +2,17 @@ const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const { Pool } = require('pg');
 
+// Use SSL only for external cloud DBs (Neon, Supabase), not for internal Dokploy PostgreSQL
+const isExternalDb = process.env.DATABASE_URL && (
+  process.env.DATABASE_URL.includes('neon.tech') ||
+  process.env.DATABASE_URL.includes('supabase') ||
+  process.env.DATABASE_URL.includes('render.com') ||
+  process.env.SSL_MODE === 'true'
+);
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
+  ssl: isExternalDb ? { rejectUnauthorized: false } : false
 });
 
 pool.on('connect', () => {
