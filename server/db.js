@@ -81,6 +81,14 @@ const initDb = async () => {
       )
     `);
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS admins (
+        id SERIAL PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL
+      )
+    `);
+
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS hero_settings (
@@ -131,6 +139,15 @@ const initDb = async () => {
         INSERT INTO hero_settings (title, subtitle, highlight, image, button_text, button_link)
         VALUES ('RED GATE LUXURY', 'Distinctive Quality Residences', 'RED GATE', 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=2000', 'استعراض الوحدات', '/apartments')
       `);
+    }
+
+    const adminCheck = await pool.query('SELECT COUNT(*) FROM admins');
+    if (parseInt(adminCheck.rows[0].count) === 0) {
+      // Default: admin / mina2024
+      const bcrypt = require('bcryptjs');
+      const hashed = await bcrypt.hash('mina2024', 10);
+      await pool.query('INSERT INTO admins (username, password) VALUES ($1, $2)', ['admin', hashed]);
+      console.log('👤 Default admin created');
     }
 
     console.log('✅ Tables and migrations initialized successfully');

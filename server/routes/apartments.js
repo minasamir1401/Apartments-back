@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const db = require('../db');
+const verifyToken = require('../middleware/auth');
 
 // Multer Config for Image Uploads
 const storage = multer.diskStorage({
@@ -20,7 +21,7 @@ const upload = multer({
 });
 
 // Upload endpoint
-router.post('/upload', upload.array('images', 1000), (req, res) => {
+router.post('/upload', verifyToken, upload.array('images', 1000), (req, res) => {
   const files = req.files.map(f => `/uploads/${f.filename}`);
   res.json({ urls: files });
 });
@@ -65,7 +66,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST create
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, async (req, res) => {
   try {
     const _id = Date.now().toString();
     const {
@@ -103,7 +104,7 @@ router.post('/', async (req, res) => {
 });
 
 // PATCH update
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', verifyToken, async (req, res) => {
   try {
     const {
       title, title_en, price, priceType, location, location_en,
@@ -142,7 +143,7 @@ router.patch('/:id', async (req, res) => {
 });
 
 // DELETE
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, async (req, res) => {
   try {
     await db.query('DELETE FROM apartments WHERE _id = $1', [req.params.id]);
     res.json({ message: 'deleted' });

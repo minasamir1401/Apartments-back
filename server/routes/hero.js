@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const multer = require('multer');
 const path = require('path');
+const verifyToken = require('../middleware/auth');
 
 // Configure Multer for Image Upload
 const storage = multer.diskStorage({
@@ -31,7 +32,7 @@ router.get('/', async (req, res) => {
 });
 
 // Create NEW slide
-router.post('/', upload.single('imageFile'), async (req, res) => {
+router.post('/', verifyToken, upload.single('imageFile'), async (req, res) => {
   const { title, subtitle, highlight, button_text, button_link, display_order } = req.body;
   const image = req.file ? `/uploads/${req.file.filename}` : 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=2000';
 
@@ -50,7 +51,7 @@ router.post('/', upload.single('imageFile'), async (req, res) => {
 });
 
 // Update EXISTING slide
-router.put('/:id', upload.single('imageFile'), async (req, res) => {
+router.put('/:id', verifyToken, upload.single('imageFile'), async (req, res) => {
   const { id } = req.params;
   const { title, subtitle, highlight, button_text, button_link, display_order, image } = req.body;
 
@@ -75,7 +76,7 @@ router.put('/:id', upload.single('imageFile'), async (req, res) => {
 });
 
 // Delete slide
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, async (req, res) => {
   const { id } = req.params;
   try {
     await db.query('DELETE FROM hero_settings WHERE id = $1', [id]);

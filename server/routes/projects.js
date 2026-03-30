@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const verifyToken = require('../middleware/auth');
 
 // GET all
 router.get('/', async (req, res) => {
@@ -25,7 +26,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST create
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, async (req, res) => {
   try {
     const _id = Date.now().toString();
     const { title, title_en, description, description_en, images, main_image, details, details_en, unit_types, location, location_en, status } = req.body;
@@ -57,7 +58,7 @@ router.post('/', async (req, res) => {
 });
 
 // PATCH update
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', verifyToken, async (req, res) => {
   try {
     const { title, title_en, description, description_en, images, main_image, details, details_en, unit_types, location, location_en, status } = req.body;
 
@@ -84,7 +85,7 @@ router.patch('/:id', async (req, res) => {
 });
 
 // DELETE
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, async (req, res) => {
   try {
     const result = await db.query('DELETE FROM projects WHERE _id = $1 OR CAST(id AS TEXT) = $1 RETURNING *', [req.params.id]);
     if (result.rows[0]) res.json({ message: 'deleted' });

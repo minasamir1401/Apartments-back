@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const verifyToken = require('../middleware/auth');
 
 // Get all areas
 router.get('/', async (req, res) => {
@@ -13,7 +14,7 @@ router.get('/', async (req, res) => {
 });
 
 // Create area
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, async (req, res) => {
   try {
     const { name, name_en, image, count, count_en, display_order } = req.body;
     const query = `
@@ -30,7 +31,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update area
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', verifyToken, async (req, res) => {
   try {
     const { name, name_en, image, count, count_en, display_order } = req.body;
     const query = `
@@ -49,7 +50,7 @@ router.patch('/:id', async (req, res) => {
 });
 
 // Delete area
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, async (req, res) => {
   try {
     await db.query('DELETE FROM areas WHERE id = $1', [req.params.id]);
     res.json({ message: 'Area deleted' });
