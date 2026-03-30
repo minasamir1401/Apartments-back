@@ -1,4 +1,4 @@
-const db = require('./Backend/server/db');
+const db = require('./server/db');
 async function check() {
   try {
     const res = await db.query('SELECT _id, title, "priceType" FROM apartments');

@@ -16,11 +16,11 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+  limits: { fileSize: 500 * 1024 * 1024 } // 500MB limit
 });
 
 // Upload endpoint
-router.post('/upload', upload.array('images', 10), (req, res) => {
+router.post('/upload', upload.array('images', 1000), (req, res) => {
   const files = req.files.map(f => `/uploads/${f.filename}`);
   res.json({ urls: files });
 });

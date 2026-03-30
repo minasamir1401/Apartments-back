@@ -2,12 +2,10 @@
   "name": "mina",
   "version": "0.0.0",
   "scripts": {
-    "start": "node Backend/server/index.js",
-    "dev": "npm-run-all --parallel dev-client server",
-    "dev-client": "vite client",
-    "server": "node Backend/server/index.js",
-    "seed": "node Backend/server/seed.js",
-    "build": "vite build client"
+    "start": "node server/index.js",
+    "dev": "node server/index.js",
+    "server": "node server/index.js",
+    "seed": "node server/seed.js"
   },
   "dependencies": {
     "axios": "^1.13.6",
