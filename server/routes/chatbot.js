@@ -79,10 +79,19 @@ ${propertiesText}
 
   } catch (err) {
     console.error('--- Chatbot AI Error ---');
-    console.error('Error Details:', err?.response?.data || err.message);
+    const errorData = err?.response?.data;
+    console.error('Error Details:', errorData || err.message);
+
+    // Handle Rate Limiting / Busy Server from ApiFreeLLM
+    if (err?.response?.status === 500 && JSON.stringify(errorData).includes('delay')) {
+        return res.json({ 
+          reply: 'أنا لسه بجهز الرد على رسالتك اللي فاتت.. بليز استنى شوية (حوالي 25 ثانية) وابعتلي تاني يا صاحبي! 😊'
+        });
+    }
+
     res.status(500).json({ 
       error: 'حدث خطأ أثناء الاتصال بالذكاء الاصطناعي.',
-      details: err?.response?.data?.error?.message || err.message
+      details: errorData?.error?.message || err.message
     });
   }
 });
