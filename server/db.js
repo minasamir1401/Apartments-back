@@ -40,6 +40,18 @@ const initDb = async () => {
       )
     `);
 
+    // Add missing columns to apartments table if they were created before we added english support and types
+    try {
+      await pool.query(`ALTER TABLE apartments ADD COLUMN IF NOT EXISTS title_en TEXT`);
+      await pool.query(`ALTER TABLE apartments ADD COLUMN IF NOT EXISTS location_en TEXT`);
+      await pool.query(`ALTER TABLE apartments ADD COLUMN IF NOT EXISTS description_en TEXT`);
+      await pool.query(`ALTER TABLE apartments ADD COLUMN IF NOT EXISTS baths TEXT`);
+      await pool.query(`ALTER TABLE apartments ADD COLUMN IF NOT EXISTS type TEXT`);
+      await pool.query(`ALTER TABLE apartments ADD COLUMN IF NOT EXISTS category TEXT`);
+    } catch (colErr) {
+      console.warn('Silent skip alter apartments cols:', colErr.message);
+    }
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS areas (
         id SERIAL PRIMARY KEY,
@@ -170,15 +182,9 @@ module.exports = {
       if (!pool) throw new Error('Database pool not initialized');
       return await pool.query(text, params);
     } catch (err) {
-      console.warn('⚠️ Database Query skipped (Connection issue):', err.message);
-      // Return a mock/empty result structure to prevent 500 errors in frontend
-      return { 
-        rows: [], 
-        rowCount: 0,
-        command: 'SELECT',
-        oid: null,
-        fields: []
-      };
+      console.error('❌ Database Query Error:', err.message);
+      // We MUST throw the error so the API endpoints know it failed and can respond with 500
+      throw err;
     }
   },
 };

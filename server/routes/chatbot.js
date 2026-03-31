@@ -18,16 +18,33 @@ router.post('/', async (req, res) => {
 
     // 1. Fetch available properties to give the AI some context
     let properties = [];
-    let propertiesText = 'لا توجد عقارات مسجلة حالياً في النظام.';
+    let projectsData = [];
+    let propertiesText = 'لا توجد عقارات أو مشاريع مسجلة حالياً في النظام.';
     
     try {
-      const result = await db.query('SELECT _id, title, location, price, type, category FROM apartments ORDER BY _id DESC LIMIT 15');
-      properties = result.rows;
+      const dbProp = await db.query('SELECT _id, title, location, price, type, category, beds, baths, size, description FROM apartments ORDER BY _id DESC LIMIT 15');
+      const dbProj = await db.query('SELECT _id, title, description, status FROM projects ORDER BY _id DESC LIMIT 10');
       
+      properties = dbProp.rows;
+      projectsData = dbProj.rows;
+      
+      let lines = [];
       if (properties.length > 0) {
-        propertiesText = properties.map(p => 
-          `العقار: ${p.title} في ${p.location} (السعر: ${p.price || 'غير محدد'}، النوع: ${p.type} للتصنيف: ${p.category}، ID الخاص به للرابط: ${p._id})`
-        ).join('\n');
+        lines.push('--- العقارات المتاحة ---');
+        lines.push(...properties.map(p => 
+          `- [${p.title}] في ${p.location} | السعر: ${p.price || 'غير محدد'} | الحجم: ${p.size || 'غير محدد'}م | ${p.beds || '0'} غرف | ${p.baths || '0'} حمامات.\nالوصف: ${p.description || 'بدون وصف'}`
+        ));
+      }
+      
+      if (projectsData.length > 0) {
+        lines.push('\n--- المشاريع العقارية الكبرى ---');
+        lines.push(...projectsData.map(proj => 
+          `- مشروع [${proj.title}] للحجز: (الحالة: ${proj.status})\nتفاصيل المشروع: ${proj.description || 'بدون تفاصيل'}`
+        ));
+      }
+      
+      if (lines.length > 0) {
+        propertiesText = lines.join('\n');
       }
     } catch (dbErr) {
       console.warn('⚠️ Warning: Could not fetch properties from DB, using AI without context.');
@@ -72,7 +89,7 @@ ${propertiesText}
 
     if (aiResponse.data && aiResponse.data.choices && aiResponse.data.choices[0].message) {
         const aiText = aiResponse.data.choices[0].message.content;
-        res.json({ reply: aiText, data: properties.slice(0, 3) });
+        res.json({ reply: aiText, data: (properties.slice(0, 3)) });
     } else {
         console.error('Groq error:', JSON.stringify(aiResponse.data, null, 2));
         throw new Error('لم يتم استلام رد صحيح من ذكاء Groq');
