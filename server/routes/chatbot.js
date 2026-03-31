@@ -82,16 +82,16 @@ ${propertiesText}
     const errorData = err?.response?.data;
     console.error('Error Details:', errorData || err.message);
 
-    // Handle Rate Limiting / Busy Server from ApiFreeLLM
-    if (err?.response?.status === 500 && JSON.stringify(errorData).includes('delay')) {
+    // Handle Rate Limiting (HTTP 429) from ApiFreeLLM
+    if (err?.response?.status === 429 || (errorData && JSON.stringify(errorData).includes('Rate limit'))) {
         return res.json({ 
-          reply: 'أنا لسه بجهز الرد على رسالتك اللي فاتت.. بليز استنى شوية (حوالي 25 ثانية) وابعتلي تاني يا صاحبي! 😊'
+          reply: 'أنا لسه بجهز الرد على رسالتك اللي فاتت.. بليز استنى ثواني بسيطة (حوالي 25 ثانية) وابعتلي تاني يا غالي! 😊'
         });
     }
 
     res.status(500).json({ 
       error: 'حدث خطأ أثناء الاتصال بالذكاء الاصطناعي.',
-      details: errorData?.error?.message || err.message
+      details: errorData?.error || err.message
     });
   }
 });
