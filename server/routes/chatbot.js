@@ -12,14 +12,21 @@ router.post('/', async (req, res) => {
     }
 
     // 1. Fetch available properties to give the AI some context
-    // You might want to limit this or filter based on a pre-search, but for <50 properties it fits perfectly in context!
-    const result = await db.query('SELECT _id, title, location, price, type, category FROM apartments ORDER BY _id DESC LIMIT 15');
-    const properties = result.rows;
+    let properties = [];
+    let propertiesText = 'لا توجد عقارات مسجلة حالياً في النظام.';
     
-    // Create a readable list for the AI
-    const propertiesText = properties.map(p => 
-      `العقار: ${p.title} في ${p.location} (السعر: ${p.price || 'غير محدد'}، النوع: ${p.type} للتصنيف: ${p.category}، ID الخاص به للرابط: ${p._id})`
-    ).join('\n');
+    try {
+      const result = await db.query('SELECT _id, title, location, price, type, category FROM apartments ORDER BY _id DESC LIMIT 15');
+      properties = result.rows;
+      
+      if (properties.length > 0) {
+        propertiesText = properties.map(p => 
+          `العقار: ${p.title} في ${p.location} (السعر: ${p.price || 'غير محدد'}، النوع: ${p.type} للتصنيف: ${p.category}، ID الخاص به للرابط: ${p._id})`
+        ).join('\n');
+      }
+    } catch (dbErr) {
+      console.warn('⚠️ Warning: Could not fetch properties from DB, using AI without context.');
+    }
 
     // 2. Setup AI Prompt
     const systemPrompt = `
@@ -36,40 +43,42 @@ ${propertiesText}
 5. إجابتك يجب أن تكون فقط هي الرسالة الموجهة للعميل (بدون أي مقدمات لك أو رسائل برمجية).
     `;
 
-    // 3. Call Gemini API
-    const apiKey = process.env.GEMINI_API_KEY;
+    // 3. Call ApiFreeLLM API
+    const apiKey = process.env.APIFREELLM_KEY;
     
     if (!apiKey) {
-      // Fallback to old behavior if no API Key is set yet
       return res.json({ 
-        reply: 'أهلاً بك! (ملاحظة للنظام: يرجى إضافة GEMINI_API_KEY في ملف .env ليتمكن الذكاء الاصطناعي من التحدث بشكل ذكي وحر).',
+        reply: 'أهلاً بك! (ملاحظة: يرجى إضافة APIFREELLM_KEY في ملف .env).',
         data: properties.slice(0,3) 
       });
     }
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const apiUrl = 'https://apifreellm.com/api/v1/chat';
     
-    const aiResponse = await axios.post(geminiUrl, {
-      contents: [
-        { role: 'user', parts: [{ text: systemPrompt + '\n\nرسالة العميل: ' + message }] }
-      ],
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 800,
+    const apiResponse = await axios.post(apiUrl, {
+      message: systemPrompt + '\n\nرسالة العميل: ' + message
+    }, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
       }
     });
 
-    if (aiResponse.data && aiResponse.data.candidates && aiResponse.data.candidates[0].content) {
-        const aiText = aiResponse.data.candidates[0].content.parts[0].text;
+    if (apiResponse.data && apiResponse.data.response) {
+        const aiText = apiResponse.data.response;
         res.json({ reply: aiText, data: properties.slice(0, 3) });
     } else {
-        console.error('Gemini error:', JSON.stringify(aiResponse.data, null, 2));
-        throw new Error('لم يتم استلام رد صحيح من ذكاء Gemini الاصطناعي');
+        console.error('ApiFreeLLM error:', JSON.stringify(apiResponse.data, null, 2));
+        throw new Error('لم يتم استلام رد صحيح من ذكاء ApiFreeLLM');
     }
 
   } catch (err) {
-    console.error('Chatbot AI error:', err?.response?.data || err.message);
-    res.status(500).json({ error: 'حدث خطأ أثناء الاتصال بالذكاء الاصطناعي.' });
+    console.error('--- Chatbot AI Error ---');
+    console.error('Error Details:', err?.response?.data || err.message);
+    res.status(500).json({ 
+      error: 'حدث خطأ أثناء الاتصال بالذكاء الاصطناعي.',
+      details: err?.response?.data?.error?.message || err.message
+    });
   }
 });
 
