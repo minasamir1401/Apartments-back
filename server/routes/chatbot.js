@@ -1,74 +1,73 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const axios = require('axios');
 
 router.post('/', async (req, res) => {
   try {
     const { message } = req.body;
     
     if (!message) {
-      return res.json({ reply: 'مرحباً بك! ما هو المكان الذي تبحث عن عقار فيه، وما هي ميزانيتك التقريبية؟' });
+      return res.json({ reply: 'مرحباً بك في ريد غيت! كيف يمكنني مساعدتك اليوم؟' });
     }
 
-    const text = message.toLowerCase();
-    
-    // Extract price (look for numbers)
-    const numbers = text.match(/\d+/g);
-    let maxPrice = null;
-    if (numbers && numbers.length > 0) {
-      // Find the largest number as max price, assuming price in millions or thousands
-      maxPrice = Math.max(...numbers.map(Number));
-    }
-
-    // Attempt to match location (simple keywords from common areas)
-    // We can just query the database with keywords from the message!
-    // Since we don't have a complex NLP, we can just do a text search on the location or title.
-    const words = text.split(/\s+/).filter(w => w.length > 2); // basic words
-    
-    let query = 'SELECT _id, title, location, price, images FROM apartments WHERE 1=1';
-    const params = [];
-
-    // Simple Location matching
-    // Filter words that look like numbers or currency
-    const searchWords = words.filter(w => isNaN(w) && !['جنيه', 'الف', 'مليون', 'دولار', 'سعر', 'ميزانية', 'في', 'عايز', 'اريد', 'بكام', 'مكان'].includes(w));
-    
-    if (searchWords.length > 0) {
-      const searchConditions = searchWords.map((word, i) => {
-        params.push(`%${word}%`);
-        return `(location ILIKE $${params.length} OR location_en ILIKE $${params.length} OR title ILIKE $${params.length} OR title_en ILIKE $${params.length})`;
-      });
-      query += ` AND (${searchConditions.join(' OR ')})`;
-    }
-
-    if (maxPrice) {
-      // Assuming price in db might be stored as numeric or string
-      // Just a simple comparison if possible, or omit if strictly string
-      // Many times price is string in old versions, but let's cast or compare.
-      // Wait, let's look at how price is stored.
-    }
-
-    query += ' LIMIT 3';
-    
-    const result = await db.query(query, params);
+    // 1. Fetch available properties to give the AI some context
+    // You might want to limit this or filter based on a pre-search, but for <50 properties it fits perfectly in context!
+    const result = await db.query('SELECT _id, title, location, price, type, category FROM apartments ORDER BY _id DESC LIMIT 15');
     const properties = result.rows;
+    
+    // Create a readable list for the AI
+    const propertiesText = properties.map(p => 
+      `العقار: ${p.title} في ${p.location} (السعر: ${p.price || 'غير محدد'}، النوع: ${p.type} للتصنيف: ${p.category}، ID الخاص به للرابط: ${p._id})`
+    ).join('\n');
 
-    let responseText = 'بناءً على طلبك، ';
-    if (properties.length > 0) {
-      responseText += 'إليك بعض الترشيحات المناسبة:\n';
-      properties.forEach(p => {
-        const priceStr = p.price ? ` - السعر: ${p.price}` : '';
-        responseText += `- ${p.title} في ${p.location}${priceStr}\n`;
+    // 2. Setup AI Prompt
+    const systemPrompt = `
+أنت المساعد الذكي والمتحضر لشركة "ريد غيت" (Red Gate) للعقارات الفاخرة في مصر.
+مهمتك هي التحدث مع العملاء بود، احترافية، ولهجة مصرية راقية أو عربية فصحى واضحة.
+لديك حالياً هذه القائمة من أحدث العقارات المتاحة لدينا في النظام:
+${propertiesText}
+
+قواعد الرد:
+1. كن ودوداً ورحب بالعميل إذا كان يلقي التحية.
+2. إذا سأل العميل عن عقار في مكان معين أو بسعر معين، ابحث في القائمة المعطاة لك أعلاه، واقترح عليه العقار المناسب مع ذكر السعر والمكان بشكل جذاب.
+3. إذا لم تجد شيئاً مناسباً في القائمة، أخبره بلطف أننا سنبحث عن طلبه، وشجعه على ترك رقم هاتفه ليتواصل معه أحد وكلائنا.
+4. لا تخترع عقارات غير موجودة في القائمة أبداً!
+5. إجابتك يجب أن تكون فقط هي الرسالة الموجهة للعميل (بدون أي مقدمات لك أو رسائل برمجية).
+    `;
+
+    // 3. Call Gemini API
+    const apiKey = process.env.GEMINI_API_KEY;
+    
+    if (!apiKey) {
+      // Fallback to old behavior if no API Key is set yet
+      return res.json({ 
+        reply: 'أهلاً بك! (ملاحظة للنظام: يرجى إضافة GEMINI_API_KEY في ملف .env ليتمكن الذكاء الاصطناعي من التحدث بشكل ذكي وحر).',
+        data: properties.slice(0,3) 
       });
-      responseText += '\nهل تود رؤية المزيد أو تعديل البحث؟';
-    } else {
-      responseText = 'عذراً، لم أجد عقارات تطابق بحثك تماماً. هل يمكنك توضيح المكان المفضل لك أو تعديل الميزانية؟';
     }
 
-    res.json({ reply: responseText, data: properties });
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    
+    const aiResponse = await axios.post(geminiUrl, {
+      contents: [
+        { role: 'user', parts: [{ text: systemPrompt + '\n\nرسالة العميل: ' + message }] }
+      ],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 800,
+      }
+    });
+
+    const aiText = aiResponse.data.candidates[0].content.parts[0].text;
+
+    // Send the intelligent reply back to the user
+    // We can also send the top 3 properties visually in the 'data' array so the front-end renders them as cards!
+    res.json({ reply: aiText, data: properties.slice(0, 3) });
 
   } catch (err) {
-    console.error('Chatbot error:', err);
-    res.status(500).json({ error: 'حدث خطأ أثناء معالجة طلبك.' });
+    console.error('Chatbot AI error:', err?.response?.data || err.message);
+    res.status(500).json({ error: 'حدث خطأ أثناء الاتصال بالذكاء الاصطناعي.' });
   }
 });
 
