@@ -11,9 +11,9 @@ router.post('/', async (req, res) => {
       return res.json({ reply: 'مرحباً بك في ريد غيت! كيف يمكنني مساعدتك اليوم؟' });
     }
     
-    const apiKey = process.env.APIFREELLM_KEY;
+    const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
-        return res.json({ reply: 'تنبيه: مفتاح الذكاء الاصطناعي APIFREELLM_KEY غير موجود في إعدادات السيرفر الأونلاين. يرجى إضافته لكي يشتغل الشات بوت.' });
+        return res.json({ reply: 'تنبيه: مفتاح الذكاء الاصطناعي GROQ_API_KEY غير موجود في إعدادات السيرفر الأونلاين.' });
     }
 
     // 1. Fetch available properties to give the AI some context
@@ -48,33 +48,34 @@ ${propertiesText}
 5. إجابتك يجب أن تكون فقط هي الرسالة الموجهة للعميل (بدون أي مقدمات لك أو رسائل برمجية).
     `;
 
-    // 3. Call ApiFreeLLM API
-    // (apiKey was already defined and checked at the top)
-    
-    if (!apiKey) {
-      return res.json({ 
-        reply: 'أهلاً بك! (ملاحظة: يرجى إضافة APIFREELLM_KEY في ملف .env).',
-        data: properties.slice(0,3) 
-      });
+    // 3. Call Groq API (Lightning Fast, No Delays)
+    const groqKey = process.env.GROQ_API_KEY;
+    if (!groqKey) {
+        return res.json({ reply: 'تنبيه: مفتاح الذكاء الاصطناعي GROQ_API_KEY غير موجود في إعدادات السيرفر الأونلاين.' });
     }
 
-    const apiUrl = 'https://apifreellm.com/api/v1/chat';
+    const groqUrl = 'https://api.groq.com/openai/v1/chat/completions';
     
-    const apiResponse = await axios.post(apiUrl, {
-      message: systemPrompt + '\n\nرسالة العميل: ' + message
+    const aiResponse = await axios.post(groqUrl, {
+      model: 'llama-3.3-70b-versatile', // الموديل الأحدث والأسرع من Groq الداعم للعربية
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: message }
+      ],
+      temperature: 0.7
     }, {
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${groqKey}`,
         'Content-Type': 'application/json'
       }
     });
 
-    if (apiResponse.data && apiResponse.data.response) {
-        const aiText = apiResponse.data.response;
+    if (aiResponse.data && aiResponse.data.choices && aiResponse.data.choices[0].message) {
+        const aiText = aiResponse.data.choices[0].message.content;
         res.json({ reply: aiText, data: properties.slice(0, 3) });
     } else {
-        console.error('ApiFreeLLM error:', JSON.stringify(apiResponse.data, null, 2));
-        throw new Error('لم يتم استلام رد صحيح من ذكاء ApiFreeLLM');
+        console.error('Groq error:', JSON.stringify(aiResponse.data, null, 2));
+        throw new Error('لم يتم استلام رد صحيح من ذكاء Groq');
     }
 
   } catch (err) {
@@ -82,16 +83,9 @@ ${propertiesText}
     const errorData = err?.response?.data;
     console.error('Error Details:', errorData || err.message);
 
-    // Handle Rate Limiting (HTTP 429) from ApiFreeLLM
-    if (err?.response?.status === 429 || (errorData && JSON.stringify(errorData).includes('Rate limit'))) {
-        return res.json({ 
-          reply: 'أنا لسه بجهز الرد على رسالتك اللي فاتت.. بليز استنى ثواني بسيطة (حوالي 25 ثانية) وابعتلي تاني يا غالي! 😊'
-        });
-    }
-
     res.status(500).json({ 
       error: 'حدث خطأ أثناء الاتصال بالذكاء الاصطناعي.',
-      details: errorData?.error || err.message
+      details: errorData?.error?.message || err.message
     });
   }
 });
