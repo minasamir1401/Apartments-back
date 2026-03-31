@@ -59,11 +59,13 @@ ${propertiesText}
       }
     });
 
-    const aiText = aiResponse.data.candidates[0].content.parts[0].text;
-
-    // Send the intelligent reply back to the user
-    // We can also send the top 3 properties visually in the 'data' array so the front-end renders them as cards!
-    res.json({ reply: aiText, data: properties.slice(0, 3) });
+    if (aiResponse.data && aiResponse.data.candidates && aiResponse.data.candidates[0].content) {
+        const aiText = aiResponse.data.candidates[0].content.parts[0].text;
+        res.json({ reply: aiText, data: properties.slice(0, 3) });
+    } else {
+        console.error('Gemini error:', JSON.stringify(aiResponse.data, null, 2));
+        throw new Error('لم يتم استلام رد صحيح من ذكاء Gemini الاصطناعي');
+    }
 
   } catch (err) {
     console.error('Chatbot AI error:', err?.response?.data || err.message);
