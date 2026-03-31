@@ -6,7 +6,7 @@ const cors = require('cors');
 const db = require('./db'); // Initialize DB pool/tables
 
 const app = express();
-app.use(cors()); // Allow all for dev stability
+app.use(cors({ origin: true, credentials: true })); // More robust CORS for production
 app.use(express.json());
 
 // Serve Static Uploads
