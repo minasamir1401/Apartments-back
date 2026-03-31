@@ -10,6 +10,11 @@ router.post('/', async (req, res) => {
     if (!message) {
       return res.json({ reply: 'مرحباً بك في ريد غيت! كيف يمكنني مساعدتك اليوم؟' });
     }
+    
+    const apiKey = process.env.APIFREELLM_KEY;
+    if (!apiKey) {
+        return res.json({ reply: 'تنبيه: مفتاح الذكاء الاصطناعي APIFREELLM_KEY غير موجود في إعدادات السيرفر الأونلاين. يرجى إضافته لكي يشتغل الشات بوت.' });
+    }
 
     // 1. Fetch available properties to give the AI some context
     let properties = [];
@@ -44,7 +49,7 @@ ${propertiesText}
     `;
 
     // 3. Call ApiFreeLLM API
-    const apiKey = process.env.APIFREELLM_KEY;
+    // (apiKey was already defined and checked at the top)
     
     if (!apiKey) {
       return res.json({ 
