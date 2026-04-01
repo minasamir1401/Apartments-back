@@ -2,16 +2,46 @@ const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
-// removed duplicate path require
 const axios = require('axios');
 const db = require('./db'); // Initialize DB pool/tables
 
 const app = express();
-app.use(cors({ origin: true, credentials: true })); // More robust CORS for production
-app.use(express.json());
 
-// Serve Static Uploads
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// --- Security & Performance Middleware ---
+app.use(cors({ origin: true, credentials: true }));
+app.use(express.json({ limit: '5mb' }));
+
+// Compression for faster responses (if available)
+try {
+  const compression = require('compression');
+  app.use(compression());
+} catch (e) { /* optional dependency */ }
+
+// Rate limiting to protect against abuse
+try {
+  const rateLimit = require('express-rate-limit');
+  app.use('/api/', rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests. Please try again later.' }
+  }));
+} catch (e) { /* optional dependency */ }
+
+// Security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  next();
+});
+
+// Serve Static Uploads with caching
+app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
+  maxAge: '7d',
+  etag: true
+}));
 
 // Load Database Routes
 app.use('/api/bookings', require('./routes/bookings'));
@@ -22,6 +52,7 @@ app.use('/api/areas', require('./routes/areas'));
 app.use('/api/projects', require('./routes/projects'));
 app.use('/api/chatbot', require('./routes/chatbot'));
 app.use('/sitemap.xml', require('./routes/sitemap'));
+app.use('/robots.txt', require('./routes/robots'));
 
 // Map Link Resolver for short URLs (maps.app.goo.gl)
 app.get('/api/resolve-map', async (req, res) => {

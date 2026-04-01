@@ -141,7 +141,15 @@ const initDb = async () => {
       "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS project_title TEXT",
       "ALTER TABLE bookings ALTER COLUMN price TYPE TEXT USING (price::text)",
       "ALTER TABLE apartments ADD COLUMN IF NOT EXISTS map_link TEXT",
-      "ALTER TABLE projects ADD COLUMN IF NOT EXISTS map_link TEXT"
+      "ALTER TABLE projects ADD COLUMN IF NOT EXISTS map_link TEXT",
+      // Performance indexes
+      "CREATE INDEX IF NOT EXISTS idx_apartments_id ON apartments(_id)",
+      "CREATE INDEX IF NOT EXISTS idx_apartments_category ON apartments(category)",
+      "CREATE INDEX IF NOT EXISTS idx_apartments_location ON apartments(location)",
+      "CREATE INDEX IF NOT EXISTS idx_apartments_type ON apartments(type)",
+      "CREATE INDEX IF NOT EXISTS idx_projects_id ON projects(_id)",
+      "CREATE INDEX IF NOT EXISTS idx_bookings_phone ON bookings(phone)",
+      "CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status)"
     ];
 
     for (const sql of migrations) {
