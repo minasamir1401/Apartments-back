@@ -139,7 +139,9 @@ const initDb = async () => {
       "ALTER TABLE projects ADD COLUMN IF NOT EXISTS location_en TEXT",
       "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS project_id TEXT",
       "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS project_title TEXT",
-      "ALTER TABLE bookings ALTER COLUMN price TYPE TEXT USING (price::text)"
+      "ALTER TABLE bookings ALTER COLUMN price TYPE TEXT USING (price::text)",
+      "ALTER TABLE apartments ADD COLUMN IF NOT EXISTS map_link TEXT",
+      "ALTER TABLE projects ADD COLUMN IF NOT EXISTS map_link TEXT"
     ];
 
     for (const sql of migrations) {

@@ -72,16 +72,16 @@ router.post('/', verifyToken, async (req, res) => {
     const {
       title, title_en, price, priceType, location, location_en,
       beds, baths, size, description, description_en, images, amenities, rules,
-      type, category
+      type, category, map_link
     } = req.body;
 
     const query = `
       INSERT INTO apartments (
         _id, title, title_en, price, pricetype, location, location_en, 
         beds, baths, size, description, description_en, images, amenities, rules,
-        type, category
+        type, category, map_link
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
       RETURNING *
     `;
     const values = [
@@ -91,7 +91,8 @@ router.post('/', verifyToken, async (req, res) => {
       JSON.stringify(amenities || []),
       JSON.stringify(rules || []),
       type || 'apartment',
-      category || 'buy'
+      category || 'buy',
+      map_link || ''
     ];
 
     const result = await db.query(query, values);
@@ -109,7 +110,7 @@ router.patch('/:id', verifyToken, async (req, res) => {
     const {
       title, title_en, price, priceType, location, location_en,
       beds, baths, size, description, description_en, images, amenities, rules,
-      type, category
+      type, category, map_link
     } = req.body;
 
     const query = `
@@ -117,8 +118,8 @@ router.patch('/:id', verifyToken, async (req, res) => {
       SET title = $1, title_en = $2, price = $3, pricetype = $4, location = $5, location_en = $6, 
           beds = $7, baths = $8, size = $9, description = $10, description_en = $11,
           images = $12, amenities = $13, rules = $14,
-          type = $15, category = $16
-      WHERE _id = $17
+          type = $15, category = $16, map_link = $17
+      WHERE _id = $18
       RETURNING *
     `;
     const values = [
@@ -128,6 +129,7 @@ router.patch('/:id', verifyToken, async (req, res) => {
       JSON.stringify(amenities),
       JSON.stringify(rules),
       type, category,
+      map_link,
       req.params.id
     ];
 

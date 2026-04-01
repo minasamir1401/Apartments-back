@@ -29,13 +29,13 @@ router.get('/:id', async (req, res) => {
 router.post('/', verifyToken, async (req, res) => {
   try {
     const _id = Date.now().toString();
-    const { title, title_en, description, description_en, images, main_image, details, details_en, unit_types, location, location_en, status } = req.body;
+    const { title, title_en, description, description_en, images, main_image, details, details_en, unit_types, location, location_en, status, map_link } = req.body;
 
     const query = `
       INSERT INTO projects (
-        _id, title, title_en, description, description_en, images, main_image, details, details_en, unit_types, location, location_en, status
+        _id, title, title_en, description, description_en, images, main_image, details, details_en, unit_types, location, location_en, status, map_link
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       RETURNING *
     `;
     const values = [
@@ -47,7 +47,8 @@ router.post('/', verifyToken, async (req, res) => {
       JSON.stringify(unit_types || []),
       location || '',
       location_en || '',
-      status || 'active'
+      status || 'active',
+      map_link || ''
     ];
 
     const result = await db.query(query, values);
@@ -60,20 +61,20 @@ router.post('/', verifyToken, async (req, res) => {
 // PATCH update
 router.patch('/:id', verifyToken, async (req, res) => {
   try {
-    const { title, title_en, description, description_en, images, main_image, details, details_en, unit_types, location, location_en, status } = req.body;
+    const { title, title_en, description, description_en, images, main_image, details, details_en, unit_types, location, location_en, status, map_link } = req.body;
 
     const query = `
       UPDATE projects 
       SET title = $1, title_en = $2, description = $3, description_en = $4,
           images = $5, main_image = $6, details = $7, details_en = $8,
-          unit_types = $9, location = $10, location_en = $11, status = $12
-      WHERE _id = $13 OR CAST(id AS TEXT) = $13
+          unit_types = $9, location = $10, location_en = $11, status = $12, map_link = $13
+      WHERE _id = $14 OR CAST(id AS TEXT) = $14
       RETURNING *
     `;
     const values = [
       title, title_en, description, description_en,
       JSON.stringify(images), main_image, details, details_en,
-      JSON.stringify(unit_types || []), location, location_en, status, req.params.id
+      JSON.stringify(unit_types || []), location, location_en, status, map_link, req.params.id
     ];
 
     const result = await db.query(query, values);
