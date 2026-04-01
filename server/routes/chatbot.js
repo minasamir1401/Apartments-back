@@ -23,7 +23,7 @@ router.post('/', async (req, res) => {
     
     try {
       const dbProp = await db.query('SELECT _id, title, location, price, type, category, beds, baths, size, description FROM apartments ORDER BY _id DESC LIMIT 15');
-      const dbProj = await db.query('SELECT _id, title, description, status FROM projects ORDER BY _id DESC LIMIT 10');
+      const dbProj = await db.query('SELECT _id, title, description, status, unit_types FROM projects ORDER BY _id DESC LIMIT 10');
       
       properties = dbProp.rows;
       projectsData = dbProj.rows;
@@ -38,9 +38,17 @@ router.post('/', async (req, res) => {
       
       if (projectsData.length > 0) {
         lines.push('\n--- المشاريع العقارية الكبرى ---');
-        lines.push(...projectsData.map(proj => 
-          `- مشروع [${proj.title}] للحجز: (الحالة: ${proj.status})\nتفاصيل المشروع: ${proj.description || 'بدون تفاصيل'}`
-        ));
+        lines.push(...projectsData.map(proj => {
+          let projectStr = `- مشروع [${proj.title}] للحجز: (الحالة: ${proj.status})\nتفاصيل المشروع: ${proj.description || 'بدون تفاصيل'}`;
+          try {
+            const units = typeof proj.unit_types === 'string' ? JSON.parse(proj.unit_types) : proj.unit_types;
+            if (units && Array.isArray(units) && units.length > 0) {
+              projectStr += '\nالوحدات والأسعار المتاحة في المشروع: ';
+              projectStr += units.map(u => `النوع: ${u.title || '?'}، المساحة: ${u.size || '?'}، السعر: ${u.price || '?'}`).join(' | ');
+            }
+          } catch(e) {}
+          return projectStr;
+        }));
       }
       
       if (lines.length > 0) {
