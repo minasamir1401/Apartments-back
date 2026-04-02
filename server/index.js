@@ -51,6 +51,7 @@ app.use('/api/hero', require('./routes/hero'));
 app.use('/api/areas', require('./routes/areas'));
 app.use('/api/projects', require('./routes/projects'));
 app.use('/api/chatbot', require('./routes/chatbot'));
+app.use('/api/settings', require('./routes/settings'));
 app.use('/sitemap.xml', require('./routes/sitemap'));
 app.use('/robots.txt', require('./routes/robots'));
 

@@ -142,6 +142,12 @@ const initDb = async () => {
       "ALTER TABLE bookings ALTER COLUMN price TYPE TEXT USING (price::text)",
       "ALTER TABLE apartments ADD COLUMN IF NOT EXISTS map_link TEXT",
       "ALTER TABLE projects ADD COLUMN IF NOT EXISTS map_link TEXT",
+      "ALTER TABLE apartments ADD COLUMN IF NOT EXISTS unit_types JSONB DEFAULT '[]'",
+      "ALTER TABLE apartments ADD COLUMN IF NOT EXISTS details TEXT",
+      "ALTER TABLE apartments ADD COLUMN IF NOT EXISTS details_en TEXT",
+      "ALTER TABLE apartments ADD COLUMN IF NOT EXISTS project_id TEXT",
+      "ALTER TABLE apartments ADD COLUMN IF NOT EXISTS project_title TEXT",
+      "CREATE TABLE IF NOT EXISTS site_settings (id SERIAL PRIMARY KEY, show_filters BOOLEAN DEFAULT TRUE, updatedAt TIMESTAMPTZ DEFAULT NOW())",
       // Performance indexes
       "CREATE INDEX IF NOT EXISTS idx_apartments_id ON apartments(_id)",
       "CREATE INDEX IF NOT EXISTS idx_apartments_category ON apartments(category)",
@@ -161,6 +167,10 @@ const initDb = async () => {
     }
 
     // 3. SEED DEFAULT DATA
+    const settingsCheck = await pool.query('SELECT COUNT(*) FROM site_settings');
+    if (parseInt(settingsCheck.rows[0].count) === 0) {
+      await pool.query('INSERT INTO site_settings (show_filters) VALUES (true)');
+    }
     const heroCheck = await pool.query('SELECT COUNT(*) FROM hero_settings');
     if (parseInt(heroCheck.rows[0].count) === 0) {
       await pool.query(`
