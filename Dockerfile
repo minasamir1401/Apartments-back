@@ -14,6 +14,10 @@ COPY . .
 # Set Env to Production
 ENV NODE_ENV=production
 
+# مجلد الـ WhatsApp Session - بيتحفظ في Docker Volume
+ENV WA_AUTH_PATH=/data/whatsapp_auth
+VOLUME ["/data/whatsapp_auth"]
+
 # Expose the server port
 EXPOSE 5000
 

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { sendBookingNotification } = require('../utils/whatsapp');
 
 // POST create
 router.post('/', async (req, res) => {
@@ -29,7 +30,21 @@ router.post('/', async (req, res) => {
     ];
 
     const result = await db.query(query, values);
-    res.status(201).json({ success: true, data: result.rows[0] });
+    const newBooking = result.rows[0];
+
+    // ✅ إرسال إشعار واتساب أوتوماتيك
+    sendBookingNotification({
+      name,
+      phone,
+      apartmentTitle,
+      projectTitle,
+      checkIn,
+      checkOut,
+      price,
+      notes
+    });
+
+    res.status(201).json({ success: true, data: newBooking });
   } catch (err) {
     console.error('❌ POST Booking Error:', err);
     res.status(500).json({ error: err.message });
