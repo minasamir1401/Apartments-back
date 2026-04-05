@@ -3,8 +3,8 @@ const pino = require('pino');
 const path = require('path');
 const QRCode = require('qrcode');
 
-// رقم الموبايل اللي هتوصله الرسايل
-const OWNER_PHONE = '201279301263@s.whatsapp.net';
+// أرقام الموبايلات اللي هتوصلهم الرسايل
+const OWNER_PHONES = ['201279301263@s.whatsapp.net', '201203311567@s.whatsapp.net'];
 
 // مكان حفظ الـ Session - هيتحفظ في Docker Volume
 const AUTH_FOLDER = process.env.WA_AUTH_PATH || path.join(__dirname, '../data/whatsapp_auth');
@@ -77,8 +77,10 @@ async function sendBookingNotification(booking) {
 ⏰ ${new Date().toLocaleString('ar-EG')}`;
 
   try {
-    await sock.sendMessage(OWNER_PHONE, { text: message });
-    console.log('✅ تم إرسال إشعار الواتساب بنجاح!');
+    for (const phone of OWNER_PHONES) {
+      await sock.sendMessage(phone, { text: message });
+    }
+    console.log('✅ تم إرسال إشعار الواتساب للأرقام المحددة بنجاح!');
   } catch (err) {
     console.error('❌ خطأ في إرسال رسالة الواتساب:', err.message);
   }
@@ -97,7 +99,7 @@ async function getQRPage(req, res) {
       <body><div class="card">
         <div style="font-size:60px">✅</div>
         <div class="status">واتساب متصل بنجاح!</div>
-        <p style="color:#999">الإشعارات شغالة أوتوماتيك على رقم 01279301263</p>
+        <p style="color:#999">الإشعارات شغالة أوتوماتيك على: 01279301263 و 01203311567</p>
       </div></body></html>
     `);
   }
