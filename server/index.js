@@ -3,10 +3,18 @@ require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
+const fs = require('fs');
 const db = require('./db'); // Initialize DB pool/tables
 const { startWhatsApp, getQRPage } = require('./utils/whatsapp');
 
 const app = express();
+
+// --- Ensure Uploads Directory Exists ---
+const uploadsPath = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath, { recursive: true });
+  console.log('📁 Created uploads directory at:', uploadsPath);
+}
 
 // --- Security & Performance Middleware ---
 app.use(cors({ origin: true, credentials: true }));
