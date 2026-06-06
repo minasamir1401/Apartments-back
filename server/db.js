@@ -1,6 +1,7 @@
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const { Pool } = require('pg');
+const fs = require('fs');
 
 // Use SSL only for external cloud DBs (Neon, Supabase), not for internal Dokploy PostgreSQL
 const isExternalDb = process.env.DATABASE_URL && (
@@ -120,6 +121,16 @@ const initDb = async () => {
       )
     `);
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS uploaded_images (
+        id SERIAL PRIMARY KEY,
+        filename TEXT UNIQUE NOT NULL,
+        mime_type TEXT NOT NULL,
+        data BYTEA NOT NULL,
+        createdAt TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
     // 2. MIGRATIONS
     const migrations = [
       "ALTER TABLE apartments ADD COLUMN IF NOT EXISTS pricetype TEXT DEFAULT 'daily'",
@@ -207,4 +218,23 @@ module.exports = {
       throw err;
     }
   },
+  saveFileToDb: async (file) => {
+    if (!file) return null;
+    try {
+      const fileBuffer = fs.readFileSync(file.path);
+      await pool.query(
+        'INSERT INTO uploaded_images (filename, mime_type, data) VALUES ($1, $2, $3) ON CONFLICT (filename) DO NOTHING',
+        [file.filename, file.mimetype, fileBuffer]
+      );
+      try {
+        fs.unlinkSync(file.path); // Delete local temp file
+      } catch (err) {
+        console.warn('⚠️ Failed to delete temp file:', file.path, err.message);
+      }
+      return `/uploads/${file.filename}`;
+    } catch (err) {
+      console.error('❌ saveFileToDb Error:', err.message);
+      throw err;
+    }
+  }
 };

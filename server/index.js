@@ -46,11 +46,31 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve Static Uploads with caching
-app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
-  maxAge: '7d',
-  etag: true
-}));
+// Serve dynamic uploads from PostgreSQL, falling back to local files on disk
+app.get('/uploads/:filename', async (req, res) => {
+  try {
+    const { filename } = req.params;
+    
+    // 1. Try to fetch from PostgreSQL
+    const result = await db.query('SELECT mime_type, data FROM uploaded_images WHERE filename = $1', [filename]);
+    if (result.rows[0]) {
+      res.setHeader('Content-Type', result.rows[0].mime_type);
+      res.setHeader('Cache-Control', 'public, max-age=604800'); // Cache for 7 days
+      return res.send(result.rows[0].data);
+    }
+
+    // 2. Fall back to local file on disk
+    const localFilePath = path.join(__dirname, '../uploads', filename);
+    if (fs.existsSync(localFilePath)) {
+      return res.sendFile(localFilePath);
+    }
+
+    res.status(404).send('Image not found');
+  } catch (err) {
+    console.error('❌ Error serving image:', err);
+    res.status(500).send('Internal Server Error');
+  }
+});
 
 // Load Database Routes
 app.use('/api/bookings', require('./routes/bookings'));

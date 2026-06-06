@@ -35,9 +35,12 @@ router.get('/', async (req, res) => {
 // Create NEW slide
 router.post('/', verifyToken, upload.single('imageFile'), async (req, res) => {
   const { title, subtitle, highlight, button_text, button_link, display_order } = req.body;
-  const image = req.file ? `/uploads/${req.file.filename}` : 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=2000';
+  let image = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=2000';
 
   try {
+    if (req.file) {
+      image = await db.saveFileToDb(req.file);
+    }
     const result = await db.query(
       `INSERT INTO hero_settings (title, subtitle, highlight, image, button_text, button_link, display_order)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -57,11 +60,10 @@ router.put('/:id', verifyToken, upload.single('imageFile'), async (req, res) => 
   const { title, subtitle, highlight, button_text, button_link, display_order, image } = req.body;
 
   let finalImage = image;
-  if (req.file) {
-    finalImage = `/uploads/${req.file.filename}`;
-  }
-
   try {
+    if (req.file) {
+      finalImage = await db.saveFileToDb(req.file);
+    }
     const result = await db.query(
       `UPDATE hero_settings 
        SET title = $1, subtitle = $2, highlight = $3, image = $4, button_text = $5, button_link = $6, display_order = $7

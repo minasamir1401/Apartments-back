@@ -22,9 +22,20 @@ const upload = multer({
 });
 
 // Upload endpoint
-router.post('/upload', verifyToken, upload.array('images', 1000), (req, res) => {
-  const files = req.files.map(f => `/uploads/${f.filename}`);
-  res.json({ urls: files });
+router.post('/upload', verifyToken, upload.array('images', 1000), async (req, res) => {
+  try {
+    const urls = [];
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const url = await db.saveFileToDb(file);
+        if (url) urls.push(url);
+      }
+    }
+    res.json({ urls });
+  } catch (err) {
+    console.error('❌ Upload to DB error:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // GET all with filters
